@@ -1,0 +1,23 @@
+{
+	"main_script": "appSpaceMaker.js",
+	"icon": "appSpaceMaker.png",
+	"width": 1280,
+	"height": 720,
+	"resize": "free",
+	"animation": true,
+	"dependencies": [
+		"WebviewAppCore.js"
+	],
+	"load": {
+		"url": "/uploads/web/index.html",
+		"favicon": "",
+		"zoom": 1.2,
+		"mode": "desktop"
+	},
+	"title": "appSpaceMaker",
+	"version": "0.1",
+	"description": "SAGE2 application appSpaceMaker",
+	"keywords": [ "sage2", "appSpaceMaker" ],
+	"author": "Dylan Kobayashi <dylank@hawaii.edu>",
+	"license": "SAGE2-Software-License"
+}
