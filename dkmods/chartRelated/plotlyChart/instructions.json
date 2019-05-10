@@ -1,0 +1,23 @@
+{
+	"main_script": "plotlyChart.js",
+	"icon": "plotlyChart.png",
+	"width": 1280,
+	"height": 720,
+	"resize": "free",
+	"animation": false,
+	"dependencies": [
+		"WebviewAppCore.js"
+	],
+	"load": {
+		"url": "/uploads/web/index.html",
+		"favicon": "",
+		"zoom": 1.2,
+		"mode": "desktop"
+	},
+	"title": "plotlyChart",
+	"version": "0.1",
+	"description": "SAGE2 application plotlyChart test",
+	"keywords": [ "sage2", "plotlyChart" ],
+	"author": "Dylan Kobayashi <dylank@hawaii.edu>",
+	"license": "SAGE2-Software-License"
+}
