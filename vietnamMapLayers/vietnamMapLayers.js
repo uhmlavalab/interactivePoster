@@ -101,7 +101,7 @@ var vietnamMapLayers = SAGE2_App.extend({
   this.imageBounds = [this.imageTopLeft, this.imageBottomRight];
   console.log(this.imageBounds);
 
-  this.imageUrl = './user/apps/rainSensorMap/images/DEM_0017_Layer-1.png';
+  this.imageUrl = './user/apps/vietnamMapLayers/images/DEM_0017_Layer-1.png';
 
   L.imageOverlay(this.imageUrl, this.imageBounds, {opacity: 0.45}).addTo(this.map);
   this.handleMapZoom = this.handleMapZoom.bind(this);
