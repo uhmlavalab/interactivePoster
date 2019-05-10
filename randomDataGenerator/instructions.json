@@ -1,0 +1,20 @@
+{
+  "main_script": "randomDataGenerator.js",
+  "icon": "icon.jpg",
+  "width":  600,
+  "height": 400,
+  "resize": "free",
+  "animation": true,
+  "dependencies": [
+      "plotly-latest.min.js"
+  ],
+  "load": {
+  
+  },
+  "title": "RandomDataGenerator",
+  "version": "1.0.0",
+  "description": "Generates a Plot that Visualizes Data from a Random Source",
+  "keywords": [ ],
+  "author": "Billy Troy Wooton <bwooton@hawaii.edu>",
+  "license": "SAGE2-Software-License"
+}
