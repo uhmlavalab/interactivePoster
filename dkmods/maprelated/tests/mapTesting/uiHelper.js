@@ -91,7 +91,7 @@ var uiHelper = {
 
 		let l = document.createElement("label");
 		l.for = c.id;
-		l.id = "cbc" + uiHelper.runningCheckboxCounter;
+		l.id = "cbl" + uiHelper.runningCheckboxCounter;
 		l.innerHTML = text;
 		d.appendChild(c);
 		d.appendChild(l);

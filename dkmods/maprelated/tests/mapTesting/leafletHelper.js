@@ -38,7 +38,7 @@ var leafletHelper = {
 		// 		'Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
 		// 	id: 'mapbox.streets'
 		// }).addTo(this.mapRef);
-		
+
 		if (tileset === "default") {
 			L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 				maxZoom: 19,
@@ -47,6 +47,10 @@ var leafletHelper = {
 		} else if (tileset == "basic") {
 			L.tileLayer('http://tile.mtbmap.cz/mtbmap_tiles/{z}/{x}/{y}.png', {
 				attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &amp; USGS'
+			}).addTo(newMap);
+		} else if (tileset === "esri_world_topo") {
+			L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', {
+				attribution: 'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ, TomTom, Intermap, iPC, USGS, FAO, NPS, NRCAN, GeoBase, Kadaster NL, Ordnance Survey, Esri Japan, METI, Esri China (Hong Kong), and the GIS User Community'
 			}).addTo(newMap);
 		}
 
