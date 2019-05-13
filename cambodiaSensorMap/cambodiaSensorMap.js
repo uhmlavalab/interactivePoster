@@ -68,7 +68,7 @@ var cambodiaSensorMap = SAGE2_App.extend({
 			this.map.invalidateSize();
 		}
 		if (this.linesToGraphs.length > 0) {
-			this.updatesLinesToGraphs();
+			this.updateLinesToGraphs();
 		}
 	},
 
@@ -160,12 +160,13 @@ var cambodiaSensorMap = SAGE2_App.extend({
 		// Create the line properties for later reference.
 		// Random int should be changed to something more meaningful later
 		let color = "#";
-		for (let i = 0; i < 6; i++) {
-			color += this.randomInt(0,9);  // Getting lazy with full values. Although can be #ffffff, current limit will be #999999
-		}
+		// for (let i = 0; i < 6; i++) {
+		// 	color += this.randomInt(0,9);  // Getting lazy with full values. Although can be #ffffff, current limit will be #999999
+		// }
+		color = "#73c2fb";
     line.attr({
 			id: this.id + "line" + options.index,
-			strokeWidth: ui.widgetControlSize * 0.18,
+			strokeWidth: ui.widgetControlSize * 0.25,
 			stroke: color
 		});
 		
@@ -183,7 +184,7 @@ var cambodiaSensorMap = SAGE2_App.extend({
 		return min + parseInt(diff * Math.random());
 	},
 
-	updatesLinesToGraphs: function() {
+	updateLinesToGraphs: function() {
 		let x1, y1, x2, y2, pixelPos, appEnd;
 		// For each of the lines
 		for (let i = 0; i < this.linesToGraphs.length; i++) {
@@ -203,7 +204,7 @@ var cambodiaSensorMap = SAGE2_App.extend({
 					y1 = pixelPos.y + this.sage2_y;
 					// End is destination app top left corner, maybe better place elsewhere.
 					x2 = appEnd.sage2_x;
-					y2 = appEnd.sage2_y;
+					y2 = appEnd.sage2_y + (appEnd.sage2_height / 2);
 				} else { // it was out of bounds. draw it off view
 					x1 = y1 = x2 = y2 = -100;
 				}
