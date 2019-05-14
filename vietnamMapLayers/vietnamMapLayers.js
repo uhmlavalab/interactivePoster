@@ -69,7 +69,14 @@ var vietnamMapLayers = SAGE2_App.extend({
   this.handleMapZoom = this.handleMapZoom.bind(this);
   this.handleMapPan = this.handleMapPan.bind(this);
   this.map.on('zoomend', this.handleMapZoom);
-  this.map.on('moveend', this.handleMapPan);
+	this.map.on('moveend', this.handleMapPan);
+	
+
+
+
+	// Add the server based map view sync
+
+	this.setupServerDataGrabber();
 },
 
 load: function(date) {
@@ -213,7 +220,65 @@ getLayerFileNamesFromImageFolder: function() {
 		["DEM_0016_landslide-inventory.png"],
 		["DEM_0017_Layer-1.png"],
 	];
-}
+},
+
+
+
+
+
+
+
+
+// ---------------------------------------------------------------------------------------------------- Data Storage
+
+
+
+setupServerDataGrabber: function() {
+	this.dataLinking = {};
+	this.dataLinking.varForCenterLock = "KeepCenterLocked";
+	this.dataLinking.disableCounters = {}; // Used to prevent self updates
+	this.dataLinking.disableCounters.boundsFromMap = 0;
+	this.dataLinking.lastTime = Date.now();
+
+	// Unsure if better way. Params are: server variable name, name of local method to handle
+	this.serverDataSubscribeToValue(this.dataLinking.varForCenterLock, "handleServerData" + this.dataLinking.varForCenterLock);
+
+	// This sets up the bound change detection
+	this.map.on("moveend", () => {
+		// disable counter for bounds is to prevent inf trigger on self from late packets
+		if (this.dataLinking.disableCounters.boundsFromMap > 0) {
+			this.dataLinking.disableCounters.boundsFromMap--;
+		} else {
+			let c = {
+				c: this.map.getCenter(),
+				z: this.map.getZoom(),
+				t: Date.now(),
+				s: this.id
+			}
+			this.dataLinking.lastTime = c.t;
+			// this.dataLinking.disableCounters.boundsFromMap++; // Prevent self trigger
+			this.serverDataSetValue(this.dataLinking.varForCenterLock, c, "Center data for view");
+		}
+	});
+},
+
+handleServerDataKeepCenterLocked: function(value) {
+	console.log("handleServerDataKeepCenterLocked");
+	if (value.s !== this.id) {
+		if (this.dataLinking.lastTime + 200 < value.t) {
+			// if (this.dataLinking.disableCounters.boundsFromMap > 0) {
+			// 	this.dataLinking.disableCounters.boundsFromMap--;
+			// 	console.log("--Squelching");
+			// } else {
+				console.log("--Using");
+				this.dataLinking.disableCounters.boundsFromMap++;
+				this.map.setZoom(value.z);
+				this.dataLinking.disableCounters.boundsFromMap++; // Prevent trigger from self
+				this.map.setView([value.c.lat, value.c.lng]);
+			// }
+		}
+	}
+},
 
 
 });
