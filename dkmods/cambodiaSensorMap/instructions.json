@@ -1,0 +1,21 @@
+{
+  "main_script": "cambodiaSensorMap.js",
+  "icon": "icon.jpg",
+  "width":  640,
+  "height": 480,
+  "resize": "proportional",
+  "animation": true,
+  "dependencies": [
+      "./leaflet/leaflet.js",
+      "./leaflet/leaflet.css"
+  ],
+  "load": {
+  
+  },
+  "title": "CambodiaSensorMap",
+  "version": "1.0.0",
+  "description": "Simulated Rain Sensor Map Over Cambodia",
+  "keywords": [ ],
+  "author": "Billy Troy Wooton <bwooton@hawaii.edu>",
+  "license": "SAGE2-Software-License"
+}

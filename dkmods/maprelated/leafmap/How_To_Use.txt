@@ -1,1 +1,0 @@
-Please see https://bitbucket.org/sage2/sage2/wiki/SAGE2%20Webview%20Container for instructions
