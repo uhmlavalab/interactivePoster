@@ -444,7 +444,13 @@ event: function(type, position, user, data, date) {
           this.currentLayer = 0;
           this.allLayerObjects[this.currentLayer].toggle();
         }
-      }
+			} else if ((data.code === 13) && (data.state === "up")) {
+				if (document.getElementById(this.element.id+'control1') === null) {
+					this.addControl();
+				} else {
+					this.removeControl();
+				}
+			}
     }
     this.refresh(date);
 },
