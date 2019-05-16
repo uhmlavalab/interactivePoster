@@ -171,10 +171,30 @@ var vietnamMapLayers = SAGE2_App.extend({
   this.map.on('moveend', this.handleMapPan);
   this.map.on('mousemove', this.handleMapMouseMove);
   this.map.on('mouseout', this.handleMapMouseOut);
+ 
+	// ---------------------------------------------------------------------------------------------------- Server data grabber
 
   // Add the server based map view sync
 	this.setupServerDataGrabber();
-},
+
+ 
+	// ---------------------------------------------------------------------------------------------------- Resize sync
+	this.resizeData = {};
+	this.resizeData.typeOptions = ["rs_styleExpandFromTopLeft", "rs_expandFromCenter", "rs_attemptToTileLock"];
+	this.resizeData.type = {};
+	for (let i = 0; i < this.resizeData.typeOptions.length; i++) {
+		this.resizeData.type[this.resizeData.typeOptions[i]] = this.resizeData.typeOptions[i];
+	}
+	this.resizeData.selectedTypeIndex = 0;
+	this.resizeData.selectedType = this.resizeData.typeOptions[this.resizeData.selectedTypeIndex];
+	this.resizeData.squelch = {}; // need squelching to prevent inf resize loop
+	this.resizeData.squelch.lastTime = Date.now();
+	this.resizeData.squelch.shouldSendSync = false;
+	this.resizeData.squelch.lastChangeFromSync = Date.now();
+	this.resizeData.squelch.delay = 500; // Half a second? more? less?
+	this.resizeData.squelch.queue = [];
+
+}, // end init
 
 placeMarkerAtLocation: function(latlng) {
   var now = Date.now();
@@ -283,11 +303,15 @@ getContextEntries: function() {
     callback: "addControl",
     parameters: {},
   };
-  entries.push(entry);
+	entries.push(entry);
+	entries.push({ description: "separator" }); // This creates a line entry used for visual separation
   entry = {
-    description: "separator"
-  }; // This creates a line entry used for visual separation
+    description: "Next Resize Style",
+    callback: "rs_cycleToNextResizeStyle",
+    parameters: {},
+  };
   entries.push(entry);
+  entries.push({ description: "separator" }); // This creates a line entry used for visual separation
   return entries;
 },
 test : function(msgParams){
@@ -383,7 +407,8 @@ draw: function(date) {
     console.log(this.zoomLevel);
     console.log(this.center);
     this.map.invalidateSize();
-  }
+	}
+	this.rs_checkIfNeedResize();
 },
 
 resize: function(date) {
@@ -396,7 +421,10 @@ resize: function(date) {
     this.map.setZoom(this.zoomLevel);
     this.map.panInside(this.center);
 
-    this.redraw = true;
+		this.redraw = true;
+
+		this.rs_update();
+		
     this.refresh(date); //redraw after resize
 },
 
@@ -416,7 +444,13 @@ event: function(type, position, user, data, date) {
           this.currentLayer = 0;
           this.allLayerObjects[this.currentLayer].toggle();
         }
-      }
+			} else if ((data.code === 13) && (data.state === "up")) {
+				if (document.getElementById(this.element.id+'control1') === null) {
+					this.addControl();
+				} else {
+					this.removeControl();
+				}
+			}
     }
     this.refresh(date);
 },
@@ -429,6 +463,158 @@ move: function(date) {
 quit: function() {
     this.log("Done");
 },
+
+// ---------------------------------------------------------------------------------------------------- Resize types
+
+rs_cycleToNextResizeStyle: function() {
+	this.resizeData.selectedTypeIndex++;
+	if (this.resizeData.selectedTypeIndex >= this.resizeData.typeOptions.length) {
+		this.resizeData.selectedTypeIndex = 0;
+	}
+	this.resizeData.selectedType = this.resizeData.typeOptions[this.resizeData.selectedTypeIndex];
+	console.log("Resize selectedType", this.resizeData.selectedType);
+},
+
+
+/*
+	Changed over time...
+
+	Current format: track lastTime this received a resize.
+*/
+rs_update: function() {
+	if (this.resizeData.squelch.lastChangeFromSync + this.resizeData.squelch.delay * 2 < Date.now()) {
+		this.resizeData.squelch.lastTime = Date.now();
+		this.resizeData.squelch.shouldSendSync = true;
+		console.log("Resize thinks should send sync after delay");
+	}
+},
+
+// Get other apps like this one then perform the resize method.
+rs_determineTypeToActivate: function() {
+	let size = {};
+	size.time = Date.now();
+	size.w = this.sage2_width;
+	size.h = this.sage2_height;
+	let appsToResize = this.rs_getOtherAppsLikeThisType();
+	this[this.resizeData.selectedType](size, appsToResize);
+},
+
+// For this method keep everything in the same top left position and expand.
+rs_styleExpandFromTopLeft: function(size, appsToResize) {
+	console.log("Resize thinks should tell others rs_styleExpandFromTopLeft");
+	let appSize;
+	// For each app, keep their original x, y, but use this app's width / height;
+	appsToResize.forEach((app) => {
+		appSize = Object.assign({}, size);
+		appSize.x = app.sage2_x;
+		appSize.y = app.sage2_y - ui.titleBarHeight; // The issue with title bars affecting location
+		app.resizeData.squelch.queue.push(appSize);
+	});
+},
+
+rs_expandFromCenter: function(size, appsToResize) {
+	console.log("Resize thinks should tell others rs_expandFromCenter");
+	let appSize, center = {};
+	// For each app, keep their original x, y, but use this app's width / height;
+	appsToResize.forEach((app) => {
+		center.x = app.sage2_x + (app.sage2_width / 2); // current center
+		center.y = (app.sage2_y - ui.titleBarHeight)+ (app.sage2_height / 2); // Does titlebar affect? unsure...
+		appSize = Object.assign({}, size);
+		appSize.x = center.x - (size.w / 2);
+		appSize.y = center.y - (size.h / 2);
+		app.resizeData.squelch.queue.push(appSize);
+	});
+},
+
+rs_attemptToTileLock: function(size, appsToResize) {
+	console.log("Resize thinks should tell others rs_attemptToTileLock");
+	// Prioritize vertical stacking
+	let verticalSupport = ui.json_cfg.resolution.height * ui.json_cfg.layout.rows; // total vertical resolution
+	let border = 50;
+	verticalSupport = parseInt(verticalSupport / (size.h + border)); // How many are supported
+
+	// If it got resized beyond the height, assume at least one is supported.
+	if (verticalSupport < 1) { vertCounter = 1; }
+	let vertCounter = 0;
+	let horiCounter = 0;
+	let appSize;
+	// use this app as part of the position
+	appsToResize.splice(0, 0, this); // params: index, delete amount, insert elements
+	appsToResize.forEach((app) => {
+		appSize = Object.assign({}, size);
+		appSize.x = horiCounter * (size.w + border)
+		appSize.y = vertCounter * (size.h + border);
+		app.resizeData.squelch.queue.push(appSize);
+		vertCounter++;
+		if (vertCounter >= verticalSupport) {
+			vertCounter = 0;
+			horiCounter++;
+		}
+	});
+},
+
+rs_getOtherAppsLikeThisType: function() {
+	let akeys = Object.keys(applications);
+	let app, appsLikeThis = [];
+	for (let i = 0; i < akeys.length; i++) {
+		app = applications[akeys[i]];
+		if ((app.id !== this.id)
+			&& (app.application === this.application)) {
+				appsLikeThis.push(app);
+		}
+	}
+	return appsLikeThis;
+},
+
+/*
+	Resize is based upon the squelch queue. Only uses the most recent.
+	Then send system update packets for position and resize.
+	
+	Unsure if bug:
+		updateApplicationPosition, necessary to update position. BUT doens't visually update.
+		resize causes the position to update even if no size(w/h) change.
+*/
+rs_checkIfNeedResize: function() {
+
+	// If app thinks got a user resize event, and the time period of waiting for resize ended, try determine which resize method to use.
+	if (this.resizeData.squelch.shouldSendSync) {
+		if (this.resizeData.squelch.lastTime + this.resizeData.squelch.delay < Date.now()) {
+			this.resizeData.squelch.shouldSendSync = false;
+			console.log("Resize thinks should tell other like apps to update now");
+			this.rs_determineTypeToActivate();
+		}
+	}
+
+
+	// Otherwise, if this app received a resize from another, it will end up in the squelch queue, and only use the most recent.
+	let mostRecent = null;
+	if (this.resizeData.squelch.queue.length > 0) {
+		mostRecent = this.resizeData.squelch.queue[0];
+		for (let i = 1; i < this.resizeData.squelch.queue.length; i++) {
+			if (mostRecent.time < this.resizeData.squelch.queue[i].time) {
+				mostRecentTime = this.resizeData.squelch.queue[i];
+			}
+		}
+	}
+	if (mostRecent) {
+		console.log("Resize thinks needs to update based on notification from another app");
+		this.resizeData.squelch.queue = []; // clear out the squelch queue.
+		let posAdjust = {};
+		posAdjust.appPositionAndSize = {};
+		posAdjust.appPositionAndSize.elemId = this.id;
+		posAdjust.appPositionAndSize.elemLeft = mostRecent.x;
+		posAdjust.appPositionAndSize.elemTop = mostRecent.y;
+		posAdjust.appPositionAndSize.elemHeight = mostRecent.h;
+		posAdjust.appPositionAndSize.elemWidth = mostRecent.w;
+		console.log("Repositioning using:", mostRecent);
+		// send
+		wsio.emit("updateApplicationPosition", posAdjust);
+		setTimeout( () => { this.sendResize(mostRecent.w, mostRecent.h); }, this.resizeData.squelch.delay / 2);
+		this.resizeData.squelch.lastChangeFromSync = Date.now();
+	}
+},
+
+
 
 // ---------------------------------------------------------------------------------------------------- Map events
 handleMapZoom: function(e) {
@@ -444,7 +630,7 @@ handleMapPan: function(e) {
 handleMapMouseMove: function(e) {
   console.log(e.latlng);
   for (appID in applications) {
-    if (appID !== this.id) {
+    if (appID !== this.id && (applications[appID].application === this.application || applications[appID].application === "wholeVietnamMap")) {
       console.log(applications[appID]);
       var latlng = [e.latlng.lat, e.latlng.lng];
       applications[appID].placeMarkerAtLocation(latlng);
@@ -456,7 +642,9 @@ handleMapMouseMove: function(e) {
 
 handleMapMouseOut: function(e) {
   for (appID in applications) {
-    applications[appID].removeCursorMarker();
+    if (applications[appID].application === this.application || applications[appID].application === "wholeVietnamMap") {
+      applications[appID].removeCursorMarker();
+    }
   }
 },
 

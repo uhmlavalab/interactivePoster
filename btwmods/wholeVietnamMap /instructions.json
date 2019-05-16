@@ -1,0 +1,20 @@
+{
+  "main_script": "wholeVietnamMap.js",
+  "icon": "icon.jpg",
+  "width":  800,
+  "height": 800,
+  "animation": true,
+  "dependencies": [
+      "./leaflet/leaflet.js",
+      "./leaflet/leaflet.css"
+  ],
+  "load": {
+
+  },
+  "title": "Map Of Vietnam",
+  "version": "1.0.0",
+  "description": "Entire Map of Vietnam Synchronized with Nam Dan Layers App",
+  "keywords": [ ],
+  "author": "Billy Troy Wooton <bwooton@hawaii.edu>",
+  "license": "SAGE2-Software-License"
+}
