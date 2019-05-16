@@ -655,7 +655,7 @@ handleMapMouseClick: function(e) {
 	// if there is a webview and it is on windy, then update the coordinates.
   for (appID in applications) {
     if ((applications[appID].application === "Webview" )&& (applications[appID].state.url.includes("windy.com"))) {
-			applications[appID].changeURL("https://www.windy.com/" + e.latlng.lat + "/" + e.latlng.lng, false);
+			applications[appID].changeURL("https://www.windy.com/" + e.latlng.lat + "/" + e.latlng.lng + "?14.900,103.480,6", false);
 			// https://www.windy.com/18.681/105.521?rainAccu,18.088,105.524,8,m:ecjai41
 		}
   }
