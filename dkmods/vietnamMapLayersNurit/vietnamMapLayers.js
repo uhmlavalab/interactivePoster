@@ -143,7 +143,8 @@ var vietnamMapLayers = SAGE2_App.extend({
 
   this.handleMapZoom = this.handleMapZoom.bind(this);
   this.handleMapPan = this.handleMapPan.bind(this);
-  this.handleMapMouseMove = this.handleMapMouseMove.bind(this);
+	this.handleMapMouseMove = this.handleMapMouseMove.bind(this);
+	this.handleMapMouseClick = this.handleMapMouseClick.bind(this);
   this.placeMarkerAtLocation = this.placeMarkerAtLocation.bind(this);
   this.removeCursorMarker = this.removeCursorMarker.bind(this);
   this.removeControl = this.removeControl.bind(this);
@@ -170,7 +171,8 @@ var vietnamMapLayers = SAGE2_App.extend({
   this.map.on('zoomend', this.handleMapZoom);
   this.map.on('moveend', this.handleMapPan);
   this.map.on('mousemove', this.handleMapMouseMove);
-  this.map.on('mouseout', this.handleMapMouseOut);
+	this.map.on('mouseout', this.handleMapMouseOut);
+	this.map.on('click', this.handleMapMouseClick)
  
 	// ---------------------------------------------------------------------------------------------------- Server data grabber
 
@@ -628,10 +630,10 @@ handleMapPan: function(e) {
 },
 
 handleMapMouseMove: function(e) {
-  console.log(e.latlng);
+  // console.log(e.latlng);
   for (appID in applications) {
-    if (appID !== this.id) {
-      console.log(applications[appID]);
+    if (appID !== this.id && (applications[appID].application === this.application || applications[appID].application === "wholeVietnamMap")) {
+      // console.log(applications[appID]);
       var latlng = [e.latlng.lat, e.latlng.lng];
       applications[appID].placeMarkerAtLocation(latlng);
     } else {
@@ -642,7 +644,20 @@ handleMapMouseMove: function(e) {
 
 handleMapMouseOut: function(e) {
   for (appID in applications) {
-    applications[appID].removeCursorMarker();
+    if (applications[appID].application === this.application || applications[appID].application === "wholeVietnamMap") {
+      applications[appID].removeCursorMarker();
+    }
+  }
+},
+
+handleMapMouseClick: function(e) {
+	// console.log("map click", e);
+	// if there is a webview and it is on windy, then update the coordinates.
+  for (appID in applications) {
+    if ((applications[appID].application === "Webview" )&& (applications[appID].state.url.includes("windy.com"))) {
+			applications[appID].changeURL("https://www.windy.com/" + e.latlng.lat + "/" + e.latlng.lng, false);
+			// https://www.windy.com/18.681/105.521?rainAccu,18.088,105.524,8,m:ecjai41
+		}
   }
 },
 
